@@ -1,0 +1,334 @@
+---
+title: "Untitled"
+author: "Christopher Boatto"
+date: "2022-09-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+# I uploaded the data into RStudio.
+
+```{r}
+PhilliesData <- read.csv(file.choose())
+attach(PhilliesData)
+```
+
+# I then check the summary and the structure of the data to begin my initial phase of exploration.
+
+```{r}
+summary(PhilliesData)
+```
+
+```{r}
+str(PhilliesData)
+```
+
+# There are no NA values in the data. Therefore I do not need to deal with any missing values.
+
+```{r}
+sum(is.na(PhilliesData))
+```
+
+# I use the DPLYR package to begin cleaning the data. I remove all % signs thus making all the ratio columns numeric. I then removed the Name and Team columns as they are inconsequential to the predictive model creation. The name and team name of the player will not have any bearing on the model learning.
+
+```{r}
+install.packages("dplyr")
+library(dplyr)
+PhilliesHitting <- select(PhilliesData, -c(Name, Team))
+```
+
+
+```{r}
+PhilliesHitting <- data.frame(sapply(PhilliesHitting, function(x) as.numeric(gsub("%", "", x))))
+```
+
+# I then created scatter plots and line plots to show the relationships between certain statistics and FullSeason_OBP. Below are the three charts I created using FullSeason_OBP as my dependent variable Interestingly enough the metric that showed the greatest correlation to FullSeason_OBP is ISO (Isolated Power). Interestingly enough it wasn't MarApr_OBP which is odd considering it is the same statistical definition as the dependent variable.
+
+#Hitters slash line statistics (chart 1) is the only graph out of the three that showed constant positive regression which would make sense as FullSeason_OBP is a metric a part of the slash line.
+
+# March and April Batted Ball Trajectory and Swing Percentages were flat in comparison to FullSeason_OBP. This could possibly be due to a lack of sample size as it usually takes about 50 batted balls in play to normalize a hitter's batted ball trajectory.
+
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+attach(PhilliesHitting)
+ggplot(PhilliesHitting) +
+  geom_point(aes(x = MarApr_SLG, y = FullSeason_OBP, colour = 'SLG'), size = 1) + 
+  geom_point(aes(x = MarApr_AVG, y = FullSeason_OBP, colour = 'AVG'), size = 1) + 
+  geom_point(aes(x = MarApr_ISO, y = FullSeason_OBP, colour = 'ISO'), size = 1) +
+   geom_point(aes(x = MarApr_OBP, y = FullSeason_OBP, colour = 'OBP'), size = 1) + 
+  geom_smooth(aes(x = MarApr_SLG, y = FullSeason_OBP), method = "auto", level = 0.9, colour = "purple") + 
+  geom_smooth(aes(x = MarApr_AVG, y = FullSeason_OBP), method = "auto", level = 0.9, colour = "red") + 
+  geom_smooth(aes(x = MarApr_ISO, y = FullSeason_OBP), method = "auto", level = 0.9, colour = "dark green") +
+  geom_smooth(aes(x = MarApr_OBP, y = FullSeason_OBP), method = "auto", level = 0.9, colour = "light blue") +
+  labs(title = "Slash Line Metrics to End Of Season OBP Correlation", subtitle = "2019 MLB Season ", x = "Percentage of Slash Line Metrics ", y = "End Of Season OBP", colour = "Slash Line")
+```
+```{r}
+ggplot(PhilliesHitting) +
+  geom_point(aes(x = MarApr_FB., y = FullSeason_OBP, colour = 'Fly Ball'), size = 1) + 
+  geom_point(aes(x = MarApr_GB., y = FullSeason_OBP, colour = 'Ground Ball'), size = 1) + 
+  geom_point(aes(x = MarApr_LD., y = FullSeason_OBP, colour = 'Line Drive'), size = 1) +
+  geom_smooth(aes(x = MarApr_FB., y = FullSeason_OBP), method = "auto", level = 0.9, colour = "red") + 
+  geom_smooth(aes(x = MarApr_GB., y = FullSeason_OBP), method = "auto", level = 0.9, colour = "green") + 
+  geom_smooth(aes(x = MarApr_LD., y = FullSeason_OBP), method = "auto", level = 0.9, colour = "blue") +
+  labs(title = "Ball Trajectory to End Of Season OBP Correlation", subtitle = "2019 MLB Season ", x = "Percentage of Ball Trajectory ", y = "End Of Season OBP", colour = "Ball Trajectory")
+
+```
+
+```{r}
+ggplot(PhilliesHitting) +
+  geom_point(aes(x = MarApr_Z.Contact., y = FullSeason_OBP, colour = 'Strike Zone Contact'), size = 1) + 
+  geom_point(aes(x = MarApr_Z.Swing., y = FullSeason_OBP, colour = 'Strike Zone Swing'), size = 1) + 
+  geom_point(aes(x = MarApr_O.Contact., y = FullSeason_OBP, colour = 'Out Side Zone Contact'), size = 1) +
+  geom_point(aes(x = MarApr_O.Swing. , y = FullSeason_OBP, colour = 'Out Side Zone Swing'), size = 1) +
+  geom_smooth(aes(x = MarApr_Z.Contact., y = FullSeason_OBP), method = "auto", level = 0.9, colour = "red") + 
+  geom_smooth(aes(x = MarApr_Z.Swing., y = FullSeason_OBP), method = "auto", level = 0.9, colour = "green") + 
+  geom_smooth(aes(x = MarApr_O.Contact., y = FullSeason_OBP), method = "auto", level = 0.9, colour = "blue") +
+  geom_smooth(aes(x = MarApr_O.Swing., y = FullSeason_OBP), method = "auto", level = 0.9, colour = "purple") +
+  labs(title = "Swing Percentages to End Of Season OBP Correlation", subtitle = "2019 MLB Season ", x = "Percentage of Ball Trajectory ", y = "End Of Season OBP", colour = "Swing Percentages")
+
+```
+
+# Below is the correlation plot. A lot of columns in this data set are highly correlative with others. This visual is helpful as it shows just how many columns must be removed as keeping the highly correlative attributes would result in noise in any predictive model.
+
+```{r}
+install.packages('corrplot')
+library(corrplot)
+PhilliesDataCor <- cor(PhilliesHitting[2:27])
+corrplot(PhilliesDataCor, type = "upper", order = 'hclust', tl.col = 'red', tl.cex = 0.5)
+```
+
+# I then remove all columns with correlations above 0.5 in preparation for my predictive model. I attmepted to remove columns that were below -0.5 as well, but said columns we no longer found after the first removal.
+
+```{r}
+PhilliesDataCor_rm <- PhilliesDataCor
+diag(PhilliesDataCor_rm) <- 0
+```
+
+```{r}
+corrplot(PhilliesDataCor_rm, type = "upper", order = 'hclust', tl.col = 'red', tl.cex = 0.5)
+```
+
+
+```{r}
+PhilliesHittingNew <- PhilliesHitting[ , !apply(PhilliesDataCor_rm, 2, function(x) any(x > 0.6))]
+#PhilliesHittingNew <- PhilliesHittingNew[ , !apply(PhilliesDataCor_rm, 2, function(x) any(x < -0.6))]
+head(PhilliesHittingNew)
+```
+
+```{r}
+PhilliesDataCor1 <- cor(PhilliesHittingNew)
+corrplot(PhilliesDataCor1, type = "upper", order = 'hclust', tl.col = 'red', tl.cex = 0.5)
+```
+
+```{r}
+PhilliesDataCor_rm1 <- PhilliesDataCor1
+diag(PhilliesDataCor_rm1) <- 0
+```
+
+```{r}
+corrplot(PhilliesDataCor_rm1, type = "upper", order = 'hclust', tl.col = 'red', tl.cex = 0.5)
+```
+
+```{r}
+PhilliesHittingNew1 <- PhilliesHittingNew[ , !apply(PhilliesDataCor_rm1, 2, function(x) any(x < -0.5))]
+PhilliesHittingNew2 <- PhilliesHittingNew1[ , !apply(PhilliesDataCor_rm1, 2, function(x) any(x > 0.5))]
+head(PhilliesHittingNew)
+```
+
+
+```{r}
+PhilliesDataCor2 <- cor(PhilliesHittingNew1)
+corrplot(PhilliesDataCor2, type = "upper", order = 'hclust', tl.col = 'red', tl.cex = 0.5)
+```
+
+```{r}
+install.packages("rpart")
+library(rpart)
+```
+
+# I then trained my data on a 90:10 split and created a binary column for FullSeason_OBP based on the interquartile range found in the summary. anything above the mean received a 1, below recieved a 0.
+
+```{r}
+set.seed(9816)
+train <- sample(nrow(PhilliesHittingNew), 0.90*nrow(PhilliesHittingNew), replace = FALSE)
+trainSet <- PhilliesHittingNew[train,]
+testSet <- PhilliesHittingNew[-train,]
+```
+
+
+```{r}
+trainSet <- mutate(trainSet, BinaryOBP = case_when(FullSeason_OBP > 0.3256  ~ 1, FullSeason_OBP < 0.3256 ~ 0))
+
+testSet <- mutate(testSet, BinaryOBP = case_when(FullSeason_OBP > 0.3256  ~ 1, FullSeason_OBP < 0.3256 ~ 0))
+```
+
+# First, I started off with a basic decision tree predictive model. I decided to use this model first because the data set is small with few columns. I used a regression model as well because I am looking to acquire a predicitve score rather than a classification of an instant. 
+
+# Below also shows the error plot that comes with the decision tree above. Some tuning of the model will be needed which is why i created a second model below.
+
+```{r}
+attach(PhilliesHittingNew)
+OBP_DT <- rpart(FullSeason_OBP ~ MarApr_RBI + MarApr_SB + MarApr_BB. + MarApr_ISO + MarApr_SLG + MarApr_LD. + MarApr_GB. + MarApr_FB. + MarApr_HR.FB + MarApr_O.Swing., data = trainSet, method = 'anova')
+```
+
+## Chart code found from https://www.edureka.co/blog/implementation-of-decision-tree/#:~:text=Plotcp()%20provides%20a%20graphical,the%20minimum%20value%20is%20reached.
+
+```{r}
+plotcp(OBP_DT)
+```
+
+# I check to see the importance of each variable to the model. This is done to see if there is a singular attribute that takes over the model and dominates. As you can see, there is no dominant attribute so the formula works well.
+
+```{r}
+install.packages('caret')
+library(caret)
+baseImp <- varImp(OBP_DT)
+baseImp
+```
+
+```{r}
+baseImp <- as.data.frame(baseImp)
+ggplot(baseImp, aes(Overall, row.names(baseImp))) + 
+  geom_bar(stat = "identity", width = 0.1, fill = "black") + 
+  geom_point(shape = 21, size = 3, colour = "black", fill = "green", stroke = 2) + 
+  labs(title = "OBP Importance", x = "Importance", y = "Variable")
+```
+
+# I use the same formula for the second decision tree model but this time I add cross validation. This is done to avoid overfitting as the model only uses one tree. This allows for the best subtree to be selected. You can see that the error chart below has improved.
+
+```{r}
+OBP_DT2 <- rpart(FullSeason_OBP ~ MarApr_RBI + MarApr_SB + MarApr_BB. + MarApr_ISO + MarApr_SLG + MarApr_LD. + MarApr_GB. + MarApr_FB. + MarApr_HR.FB + MarApr_O.Swing., data = trainSet, method = 'anova', control = list(cp= 0, xval = 10))
+```
+
+```{r}
+plotcp(OBP_DT2)
+```
+
+# I then obtain a prediction score based on the tuned decision tree model above and create it's own dataset including the predictive scores.
+
+```{r}
+OBP_train <- predict(OBP_DT2, trainSet, type = 'vector')
+OBP_test <- predict(OBP_DT2, testSet, type = "vector")
+```
+
+```{r}
+trainSet_DT <- cbind(trainSet, OBP_train)
+testSet_DT <- cbind(testSet, OBP_test)
+```
+
+```{r}
+names(trainSet_DT)[names(trainSet_DT) == "OBP_train"] <- "OBPPredDT"
+names(testSet_DT)[names(testSet_DT) == "OBP_test"] <- "OBPPredDT"
+```
+
+```{r}
+OBPPredDT <- rbind(trainSet_DT, testSet_DT)
+```
+
+# The ROC graph and accuracy scores show how well the model did at learning by itself. The area under the curve is about 0.84 or 84% which isn't bad but could definitely be improved upon. So I decide to try a different predictive model.
+
+```{r}
+install.packages('pROC')
+library(pROC)
+roc_test <- roc(ifelse(testSet_DT$BinaryOBP == "1", "1", "0"), as.numeric(testSet_DT$OBPPredDT))
+roc_train <- roc(ifelse(trainSet_DT$BinaryOBP == "1", "1", "0"), as.numeric(trainSet_DT$OBPPredDT))
+plot(roc_test, col = "blue", main = "Pitching ROC Graph")
+lines(roc_train, col = "green")
+```
+
+```{r}
+auc(OBPPredDT$BinaryOBP, OBPPredDT$OBPPredDT)
+```
+
+# My next model is logistic regression. This is the most basic model to create and much like my reasoning for using a decision tree, the nature of the small data size made me decide to use logistic regression. As you can see below, there's no statistical significance to any of the attributes therefore I didn't use this model to predict any scores.
+
+```{r}
+LinRegMod <- glm(FullSeason_OBP ~ MarApr_RBI + MarApr_SB + MarApr_BB. + MarApr_ISO + MarApr_SLG + MarApr_LD. + MarApr_GB. + MarApr_FB. + MarApr_HR.FB + MarApr_O.Swing., data = trainSet, family = 'binomial')
+summary(LinRegMod)
+```
+
+# My last predictive model I chose to use is Random Forest. Because the decision tree model showed promise I decided to use the more powerful tree based model. 
+
+```{r}
+install.packages('randomForest')
+library(randomForest)
+```
+
+
+```{r}
+RFModel <- randomForest(FullSeason_OBP ~ MarApr_RBI + MarApr_SB + MarApr_BB. + MarApr_ISO + MarApr_SLG + MarApr_LD. + MarApr_GB. + MarApr_FB. + MarApr_HR.FB + MarApr_O.Swing., data = trainSet, importance = TRUE, maxnodes = 100, mtry = 3, nodesize = 5, ntrees = 15)
+```
+
+```{r}
+print(RFModel)
+```
+
+# Below are the feature importance and error charts. As you can see the importance chart looks much like that of the decision tree. This means that no one attribute dominated the model. The error chart below also shows that as the more trees are used, the less chance of an error occurs. This makes me think that the random forest model is going to perform better. 
+
+```{r}
+baseImp <- importance(RFModel)
+baseImp <- as.data.frame(baseImp)
+ggplot(baseImp, aes(IncNodePurity, row.names(baseImp))) + 
+  geom_bar(stat = "identity", width = 0.1, fill = "Dark Blue") + 
+  geom_point(shape = 21, size = 3, colour = "Dark Blue", fill = "White", stroke = 2) + 
+  labs(title = "On Base Importance", x = "Importance", y = "Variable")
+```
+
+```{r}
+plot(RFModel, col = "green", main = "Base Model Error Chart")
+```
+
+# I use the random forest model to then predict the scores and combine them into a data set much like that of the decision tree. 
+
+```{r}
+OBP_train <- predict(RFModel, trainSet)
+OBP_test <- predict(RFModel, testSet)
+```
+
+```{r}
+trainSet_RF <- cbind(trainSet, OBP_train)
+testSet_RF <- cbind(testSet, OBP_test)
+```
+
+```{r}
+names(trainSet_RF)[names(trainSet_RF) == "OBP_train"] <- "OBPPredRF"
+names(testSet_RF)[names(testSet_RF) == "OBP_test"] <- "OBPPredRF"
+```
+
+```{r}
+OBPPredRF <- rbind(trainSet_RF, testSet_RF)
+```
+
+# The ROC graph below shows promise to the model learning what predicts FullSeason_OBP. You will alos notice a lack of smoothnesss to the curve. That can be attributed to the small sample size of the data
+
+# The area under the curve is over 0.95 or 95% which means that random forest out performed the decision tree by over 10% therefore the results from this model should be used.
+
+```{r}
+roc_test <- roc(ifelse(testSet_RF$BinaryOBP == "1", "1", "0"), as.numeric(testSet_RF$OBPPredRF))
+roc_train <- roc(ifelse(trainSet_RF$BinaryOBP == "1", "1", "0"), as.numeric(trainSet_RF$OBPPredRF))
+plot(roc_test, col = "blue", main = "On Base Predict ROC Graph")
+lines(roc_train, col = "green")
+```
+
+```{r}
+auc(OBPPredRF$BinaryOBP, OBPPredRF$OBPPredRF)
+```
+
+#I then add the random forest predictive scores back into the original data set. This allows me to centralize all information in one spot.
+
+## Code found off https://stackoverflow.com/questions/37034242/add-a-new-column-to-a-dataframe-using-matching-values-of-another-dataframe
+
+```{r}
+PhilliesData$OBPPred_RF <- OBPPredRF$OBPPredRF[match(PhilliesData$playerid, OBPPredRF$playerid)]
+```
+
